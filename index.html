@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[EDZŐTEREM NEVE] - Smart Fitness</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="[EDZŐTEREM NEVE]">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SUPABASE KAPCSOLAT -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between pb-20">
+
+    <!-- FELSŐ FEJLÉC -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wider text-emerald-400">[EDZŐTEREM NEVE]</h1>
+            <span id="userStatus" class="text-xs bg-slate-800 px-3 py-1 rounded-full text-slate-400">Betöltés...</span>
+        </div>
+    </header>
+
+    <!-- FŐ TARTALOM -->
+    <main class="max-w-md mx-auto w-full p-4 flex-grow">
+        
+        <!-- ================= LAP: PROFILOM / REGISZTRÁCIÓ ================= -->
+        <section id="profilom" class="tab-content active space-y-6">
+            <!-- Bejelentkezett profil nézet -->
+            <div id="profileDetails" class="hidden bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <h2 class="text-2xl font-bold text-emerald-400">Szia, <span id="loggedName">[Név]</span>!</h2>
+                <div class="space-y-2 text-sm text-slate-300">
+                    <p><strong>E-mail:</strong> <span id="loggedEmail">-</span></p>
+                    <p><strong>Telefon:</strong> <span id="loggedPhone">-</span></p>
+                    <p><strong>Születési dátum:</strong> <span id="loggedBirth">-</span></p>
+                    <p><strong>Számlázási cím:</strong> <span id="loggedAddress">-</span></p>
+                </div>
+                <button onclick="logout()" class="w-full bg-rose-600 hover:bg-rose-700 py-3 rounded-xl font-semibold transition mt-4">Kijelentkezés</button>
+            </div>
+
+            <!-- Regisztrációs és Bejelentkezési űrlapok -->
+            <div id="authForms" class="space-y-6">
+                <!-- Bejelentkezés -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                    <h2 class="text-xl font-bold mb-4">Bejelentkezés</h2>
+                    <form onsubmit="handleLogin(event)" class="space-y-4">
+                        <input type="email" id="loginEmail" placeholder="E-mail cím" required class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400">
+                        <input type="password" id="loginPass" placeholder="Jelszó" required class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400">
+                        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 py-3 rounded-xl font-bold transition">Belépés</button>
+                    </form>
+                </div>
+
+                <!-- Regisztráció -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                    <h2 class="text-xl font-bold mb-4">Új fiók létrehozása</h2>
+                    <form onsubmit="handleRegister(event)" class="space-y-4">
+                        <input type="text" id="regName" placeholder="Teljes név" required class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400">
+                        <input type="email" id="regEmail" placeholder="E-mail cím" required class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400">
+                        <input type="tel" id="regPhone" placeholder="Telefonszám" required class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400">
+                        <input type="date" id="regBirth" required class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400">
+                        <input type="text" id="regAddress" placeholder="Számlázási cím" required class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400">
+                        <input type="password" id="regPass" placeholder="Jelszó" required class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400">
+                        
+                        <label class="flex items-start space-x-2 text-xs text-slate-400 cursor-pointer">
+                            <input type="checkbox" required class="mt-1">
+                            <span>Elfogadom az <span onclick="openModal('aszfModal')" class="text-emerald-400 underline">ÁSZF-et</span> és az <span onclick="openModal('adatkezelesModal')" class="text-emerald-400 underline">Adatkezelési Tájékoztatót</span>.</span>
+                        </label>
+                        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 py-3 rounded-xl font-bold transition">Regisztráció beküldése</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= LAP: BELÉPŐIM ================= -->
+        <section id="belepoim" class="tab-content space-y-6">
+            <h2 class="text-2xl font-bold text-emerald-400">Belépőid & Bérleteid</h2>
+            <div id="noPass" class="bg-slate-900 p-8 rounded-2xl border border-slate-800 text-center space-y-4">
+                <p class="text-slate-400">Jelenleg nincs aktív bérleted vagy napijegyed.</p>
+                <button onclick="switchTab('arak')" class="bg-emerald-500 text-slate-950 px-6 py-2 rounded-xl font-bold">Vásárlás most</button>
+            </div>
+            <!-- Ide kerülnek a megvásárolt tételek (egymás alá) -->
+            <div id="passList" class="space-y-4"></div>
+        </section>
+
+        <!-- ================= LAP: ÁRAK ÉS AJÁNLATOK ================= -->
+        <section id="arak" class="tab-content space-y-6">
+            <h2 class="text-2xl font-bold text-emerald-400">Árak & Vásárlás</h2>
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-lg">Napijegy</h3>
+                    <p class="text-xs text-slate-400">Egyszeri belépésre</p>
+                    <span class="text-emerald-400 font-bold block mt-1">[ÁR, pl. 2 000 Ft]</span>
+                </div>
+                <button onclick="handlePurchaseAttempt('napijegy', 'Napijegy')" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl transition">Fizetés</button>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl border-emerald-500/50 border-2 flex justify-between items-center relative overflow-hidden">
+                <span class="absolute top-0 right-0 bg-emerald-500 text-slate-950 text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase">Legnépszerűbb</span>
+                <div>
+                    <h3 class="font-bold text-lg">Havi bérlet</h3>
+                    <p class="text-xs text-slate-400">Korlátlan belépés 30 napig</p>
+                    <span class="text-emerald-400 font-bold block mt-1">[ÁR, pl. 15 000 Ft]</span>
+                </div>
+                <button onclick="handlePurchaseAttempt('berlet', 'Havi bérlet')" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl transition">Fizetés</button>
+            </div>
+        </section>
+
+        <!-- ================= LAP: KAPCSOLAT ================= -->
+        <section id="kapcsolat" class="tab-content space-y-6">
+            <h2 class="text-2xl font-bold text-emerald-400">Kapcsolat & Segítség</h2>
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <p class="text-sm text-slate-300">Ha elakadtál a belépésnél, keress minket elérhetőségeinken!</p>
+                <div class="space-y-3 text-sm">
+                    <p>📞 <a href="tel:[TELEFONSZÁM]" class="hover:underline">[TELEFONSZÁM]</a></p>
+                    <p>✉️ <a href="mailto:[EMAIL]" class="hover:underline">[EMAIL]</a></p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODALOK (ÁSZF / GDPR) -->
+    <div id="aszfModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 max-h-[80vh] flex flex-col justify-between">
+            <h2 class="text-lg font-bold text-emerald-400 mb-4">ÁSZF</h2>
+            <div class="overflow-y-auto text-sm text-slate-300 mb-6 pr-2">ÁSZF szöveg helye...</div>
+            <button onclick="closeModal('aszfModal')" class="bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl w-full">Bezárás</button>
+        </div>
+    </div>
+    <div id="adatkezelesModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 max-h-[80vh] flex flex-col justify-between">
+            <h2 class="text-lg font-bold text-emerald-400 mb-4">Adatkezelés</h2>
+            <div class="overflow-y-auto text-sm text-slate-300 mb-6 pr-2">GDPR szöveg helye...</div>
+            <button onclick="closeModal('adatkezelesModal')" class="bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl w-full">Bezárás</button>
+        </div>
+    </div>
+
+    <!-- ALSÓ NAVIGÁCIÓ -->
+    <nav class="bg-slate-900 border-t border-slate-800 fixed bottom-0 left-0 right-0 py-2 z-50">
+        <div class="max-w-md mx-auto flex justify-around text-center text-xs">
+            <button onclick="switchTab('profilom')" class="nav-btn flex flex-col items-center text-emerald-400" id="btn-profilom"><span>👤</span><span>Profilom</span></button>
+            <button onclick="switchTab('belepoim')" class="nav-btn flex flex-col items-center text-slate-400" id="btn-belepoim"><span>🎟️</span><span>Belépőim</span></button>
+            <button onclick="switchTab('arak')" class="nav-btn flex flex-col items-center text-slate-400" id="btn-arak"><span>💰</span><span>Árak</span></button>
+            <button onclick="switchTab('kapcsolat')" class="nav-btn flex flex-col items-center text-slate-400" id="btn-kapcsolat"><span>📞</span><span>Kapcsolat</span></button>
+        </div>
+    </nav>
+
+    <!-- JAVASCRIPT MOTOR -->
+    <script>
+        // Beillesztettem a megadott projekt adatokat
+        const SUPABASE_URL = "https://bjsblpnputbrivyygvaw.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqc2JscG5wdXRicml2eXlndmF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNDk1ODIsImV4cCI6MjA5OTYyNTU4Mn0.NiXDPTjtl0bVARXQ3KOkx8LOiBI7xDRuTvCCfc3p1HU";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function openModal(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
+        function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-emerald-400');
+                btn.classList.add('text-slate-400');
+            });
+            document.getElementById('btn-' + tabId).classList.add('text-emerald-400');
+            document.getElementById('btn-' + tabId).classList.remove('text-slate-400');
+        }
+
+        // REGISZTRÁCIÓ
+        async function handleRegister(event) {
+            event.preventDefault();
+            const email = document.getElementById('regEmail').value.toLowerCase();
+            const password = document.getElementById('regPass').value;
+            const fullName = document.getElementById('regName').value;
+            const phone = document.getElementById('regPhone').value;
+            const birth = document.getElementById('regBirth').value;
+            const address = document.getElementById('regAddress').value;
+
+            const { data, error } = await supabaseClient.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        full_name: fullName,
+                        phone: phone,
+                        birth_date: birth,
+                        billing_address: address
+                    }
+                }
+            });
+
+            if (error) {
+                alert("Hiba a regisztráció során: " + error.message);
+            } else {
+                alert("Sikeres regisztráció! Kérjük, ellenőrizd az e-mail fiókodat a visszaigazoló linkért, majd jelentkezz be.");
+                updateUI();
+            }
+        }
+
+        // BEJELENTKEZÉS
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value.toLowerCase();
+            const password = document.getElementById('loginPass').value;
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                alert("Hiba a belépésnél: " + error.message);
+            } else {
+                updateUI();
+            }
+        }
+
+        // KIJELENTKEZÉS
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            updateUI();
+        }
+
+        // UI FRISSÍTÉS
+        async function updateUI() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            
+            if (session && session.user) {
+                const user = session.user;
+                document.getElementById('authForms').classList.add('hidden');
+                document.getElementById('profileDetails').classList.remove('hidden');
+                
+                document.getElementById('loggedName').innerText = user.user_metadata.full_name || 'Vendég';
+                document.getElementById('loggedEmail').innerText = user.email;
+                document.getElementById('loggedPhone').innerText = user.user_metadata.phone || '-';
+                document.getElementById('loggedBirth').innerText = user.user_metadata.birth_date || '-';
+                document.getElementById('loggedAddress').innerText = user.user_metadata.billing_address || '-';
+                
+                document.getElementById('userStatus').innerText = "Bejelentkezve";
+                loadPasses(user.email);
+            } else {
+                document.getElementById('authForms').classList.remove('hidden');
+                document.getElementById('profileDetails').classList.add('hidden');
+                document.getElementById('userStatus').innerText = "Vendég";
+                document.getElementById('passList').innerHTML = '';
+                document.getElementById('noPass').classList.remove('hidden');
+            }
+        }
+
+        // VÁSÁRLÁS ELŐTTI ELLENŐRZÉS ÉS FIGYELMEZTETÉS
+        async function handlePurchaseAttempt(productType, productName) {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                alert("A vásárláshoz kérjük először regisztrálj vagy jelentkezz be!");
+                switchTab('profilom');
+                return;
+            }
+
+            const email = session.user.email;
+
+            // Lekérjük az adatbázisból az összes nem lejárt bérletét
+            const { data: activePasses, error } = await supabaseClient
+                .from('passes')
+                .select('*')
+                .eq('user_email', email)
+                .gt('expiry', new Date().toISOString());
+
+            // Ha van köztük akár egyetlen egy aktív tétel is, figyelmeztetünk
+            if (activePasses && activePasses.length > 0) {
+                const confirmChoice = confirm("Már van aktív belépőd, biztosan vásárolni szeretnél még egyet?");
+                if (!confirmChoice) return;
+            }
+
+            simulatePurchase(productType, productName, email);
+        }
+
+        // VÁSÁRLÁS VÉGREHAJTÁSA ÉS BESZÚRÁS A SUPABASE-BE
+        async function simulatePurchase(productType, productName, email) {
+            alert("Átirányítás a Barion biztonságos fizetési oldalára...");
+            
+            setTimeout(async () => {
+                const expiryDate = new Date();
+                if (productType === 'berlet') {
+                    expiryDate.setDate(expiryDate.getDate() + 30);
+                } else {
+                    expiryDate.setDate(expiryDate.getDate() + 1);
+                }
+                
+                const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+
+                // Új elemként szúrjuk be az adatbázisba (nem írjuk felül a régit)
+                const { error } = await supabaseClient
+                    .from('passes')
+                    .insert([
+                        { 
+                            user_email: email, 
+                            type: productType, 
+                            name: productName, 
+                            expiry: expiryDate.toISOString(), 
+                            pin: randomPin 
+                        }
+                    ]);
+
+                if (error) {
+                    alert("Hiba történt a bérlet mentése során: " + error.message);
+                } else {
+                    alert("Sikeres vásárlás! Az új belépőd hozzáadva.");
+                    loadPasses(email);
+                    switchTab('belepoim');
+                }
+            }, 1000);
+        }
+
+        // BÉRLETEK LISTÁZÁSA A SUPABASE-BŐL
+        async function loadPasses(email) {
+            const passListDiv = document.getElementById('passList');
+            const noPassDiv = document.getElementById('noPass');
+            
+            passListDiv.innerHTML = '<div class="text-slate-400 text-center py-4">Bérletek betöltése...</div>';
+
+            const { data: passes, error } = await supabaseClient
+                .from('passes')
+                .select('*')
+                .eq('user_email', email)
+                .order('expiry', { ascending: false });
+
+            passListDiv.innerHTML = '';
+
+            if (error || !passes || passes.length === 0) {
+                noPassDiv.classList.remove('hidden');
+                return;
+            }
+
+            noPassDiv.classList.add('hidden');
+            const now = new Date();
+
+            passes.forEach(pass => {
+                const expiryDate = new Date(pass.expiry);
+                const isExpired = expiryDate < now;
+                
+                const card = document.createElement('div');
+                card.className = `p-6 rounded-2xl border text-center space-y-4 ${
+                    isExpired ? 'bg-slate-900/40 border-slate-800/60 opacity-50' : 'bg-slate-900 border-slate-800'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="font-bold text-sm text-slate-200">${pass.name}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            isExpired ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'
+                        }">${isExpired ? 'Lejárt' : 'Aktív'}</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Lejárat: <strong class="text-slate-300">${expiryDate.toLocaleDateString('hu-HU')} ${expiryDate.toLocaleTimeString('hu-HU', {hour: '2-digit', minute:'2-digit'})}</strong></p>
+                    ${isExpired ? '' : `
+                        <div class="bg-white p-4 w-40 h-40 mx-auto rounded-xl flex items-center justify-center shadow-lg">
+                            <div class="text-slate-900 text-[10px] font-extrabold flex flex-col items-center">
+                                <span class="text-2xl mb-1">🔑</span>
+                                <span class="text-[12px] text-emerald-600 tracking-wider font-mono">${pass.pin}</span>
+                                <span class="text-[8px] font-normal text-slate-500 mt-1">Géptermi belépőkód</span>
+                            </div>
+                        </div>
+                    `}
+                `;
+                passListDiv.appendChild(card);
+            });
+        }
+
+        // Felhasználói állapotfigyelés
+        supabaseClient.auth.onAuthStateChange(() => {
+            updateUI();
+        });
+
+        window.onload = function() {
+            updateUI();
+        };
+    </script>
+</body>
+</html>
