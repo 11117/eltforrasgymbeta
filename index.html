@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness App - Biztonságos verzió</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+    <div id="app" class="max-w-md mx-auto p-4">
+        <!-- Auth nézet -->
+        <div id="auth-view" class="hidden space-y-4">
+            <h1 class="text-2xl font-bold text-emerald-400">Üdvözöljük!</h1>
+            <input type="email" id="email" placeholder="Email" class="w-full p-3 bg-slate-900 rounded-xl border border-slate-700">
+            <input type="password" id="password" placeholder="Jelszó" class="w-full p-3 bg-slate-900 rounded-xl border border-slate-700">
+            <button onclick="login()" class="w-full bg-emerald-500 py-3 rounded-xl font-bold">Bejelentkezés</button>
+        </div>
+
+        <!-- Dashboard nézet -->
+        <div id="dash-view" class="hidden space-y-6">
+            <h2 class="text-xl font-bold">Szia, <span id="user-name"></span>!</h2>
+            <div id="gym-access" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 text-center">
+                <p class="mb-4">Edzőterem belépés</p>
+                <div id="qr-container"></div>
+                <button onclick="generateAccess()" class="mt-4 bg-emerald-500 px-6 py-2 rounded-lg font-bold">Belépőkód generálása</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://bjsblpnputbrivyygvaw.supabase.co', 'EYJ...'); // Ide írd be a valós anon key-ed
+
+        // 1. App inicializálás
+        async function checkAuth() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                renderDashboard(session.user);
+            } else {
+                document.getElementById('auth-view').classList.remove('hidden');
+            }
+        }
+
+        // 2. Bejelentkezés
+        async function login() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const { error } = await _supabase.auth.signInWithPassword({ email, password: pass });
+            if (error) alert("Hiba: " + error.message);
+            else location.reload();
+        }
+
+        // 3. Biztonságos belépés generálás (Edge Function hívás)
+        async function generateAccess() {
+            const container = document.getElementById('qr-container');
+            container.innerHTML = "Generálás...";
+
+            // Itt hívjuk meg a Supabase Edge Function-t, ami a szerveren beszél a ManyLock-kal
+            const { data, error } = await _supabase.functions.invoke('get-manylock-pin', {
+                method: 'POST'
+            });
+
+            if (data?.pin) {
+                container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?data=${data.pin}" class="mx-auto">`;
+            } else {
+                alert("Nincs aktív bérleted!");
+            }
+        }
+
+        async function renderDashboard(user) {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('dash-view').classList.remove('hidden');
+            document.getElementById('user-name').innerText = user.email;
+        }
+
+        window.onload = checkAuth;
+    </script>
+</body>
+</html>
