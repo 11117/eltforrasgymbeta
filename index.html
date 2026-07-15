@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konditerem App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>.tab-content { display: none; } .active-tab { display: block; }</style>
+
+
+    // A navigáció frissítése, hogy betöltse az árakat
+function showView(viewId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-tab'));
+    document.getElementById('view-' + viewId).classList.add('active-tab');
+    
+    if (viewId === 'szaunak' || viewId === 'arak') {
+        loadPrice();
+    }
+}
+
+// Ár lekérése az adatbázisból
+async function loadPrice() {
+    const { data } = await supabase.from('settings').select('value').eq('key', 'szauna_ar').single();
+    if(data) {
+        document.getElementById('szauna-ar-kijelzo').innerText = data.value + " Ft";
+    }
+}
+
+// Szauna jegy vásárlása és QR generálás
+async function vasarlasSzauna() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return alert("Kérlek jelentkezz be!");
+
+    const secret = Math.random().toString(36).substring(7); // Egyedi kód
+
+    // Jegy elmentése adatbázisba
+    const { error } = await supabase.from('tickets').insert([
+        { 
+            user_id: user.id, 
+            type: 'Szauna napijegy', 
+            price: 2000, 
+            qr_code_secret: secret 
+        }
+    ]);
+
+    if (!error) {
+        alert("Sikeres vásárlás!");
+        generaloQR(secret);
+    }
+}
+
+// QR kód megjelenítése
+function generaloQR(secret) {
+    document.getElementById('qr-container').innerHTML = ""; // Tiszta
+    new QRCode(document.getElementById('qr-container'), {
+        text: secret,
+        width: 200,
+        height: 200
+    });
+}
+
+
+<script src="[https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js](https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js)"></script>
+
+
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col pb-20">
+
+    <main id="app" class="flex-grow p-4">
+        <!-- Profil Fül -->
+        <div id="view-profil" class="tab-content active-tab">
+            <h2 class="text-2xl font-bold mb-4">Profilom</h2>
+            <div id="auth-container">
+                <input type="email" id="email" placeholder="E-mail (felhasználónév)" class="w-full p-2 border mt-2 rounded">
+                <input type="password" id="password" placeholder="Jelszó" class="w-full p-2 border mt-2 rounded">
+                <input type="text" id="full_name" placeholder="Teljes név" class="w-full p-2 border mt-2 rounded hidden">
+                <input type="tel" id="phone" placeholder="Telefonszám" class="w-full p-2 border mt-2 rounded hidden">
+                <input type="date" id="birth_date" class="w-full p-2 border mt-2 rounded hidden">
+                
+                <button id="main-btn" onclick="handleAuth()" class="bg-blue-600 text-white p-2 mt-4 w-full rounded">Bejelentkezés</button>
+                <p class="text-center mt-2 cursor-pointer text-sm text-blue-500" onclick="toggleMode()" id="toggle-text">Nincs még fiókod? Regisztráció</p>
+            </div>
+            <div id="user-info" class="hidden">
+                <p>Üdvözöllek, <b id="user-name"></b>!</p>
+                <button onclick="logout()" class="bg-red-500 text-white p-2 mt-4 w-full rounded">Kijelentkezés</button>
+            </div>
+        </div>
+
+        <!-- Belépőim Fül -->
+        <div id="view-belepoim" class="tab-content">
+            <h2 class="text-2xl font-bold mb-4">Belépőim</h2>
+            <div id="tickets-list"></div>
+        </div>
+
+        <!-- Admin Fül -->
+<div id="view-admin" class="tab-content">
+    <h2 class="text-2xl font-bold mb-4">Admin Felület</h2>
+    <div id="admin-controls" class="hidden">
+        <label>Szauna jegy ára (Ft):</label>
+        <input type="number" id="admin-szauna-price" class="w-full p-2 border mb-4">
+        
+        <label>Nyitvatartás:</label>
+        <textarea id="admin-nyitvatartas" class="w-full p-2 border mb-4"></textarea>
+        
+        <button onclick="saveSettings()" class="bg-green-600 text-white p-3 w-full rounded">Árak és Beállítások Mentése</button>
+    </div>
+    <div id="admin-denied" class="text-red-500">Nincs admin jogosultságod!</div>
+</div>
+
+
+<!-- Árak Fül -->
+<div id="view-arak" class="tab-content">
+    <h2 class="text-2xl font-bold mb-4">Árak és Információk</h2>
+    <div id="arak-container" class="bg-white p-4 rounded shadow">
+        <p>Aktuális szauna napijegy: <span id="szauna-ar-kijelzo" class="font-bold">...</span></p>
+    </div>
+</div>
+
+<!-- Szaunák Fül -->
+<div id="view-szaunak" class="tab-content">
+    <h2 class="text-2xl font-bold mb-4">Szaunák</h2>
+    <button onclick="vasarlasSzauna()" class="bg-blue-600 text-white p-4 w-full rounded">Szauna jegy vásárlása</button>
+    <div id="qr-container" class="mt-6 flex justify-center"></div>
+</div>
+
+
+    </main>
+
+    <!-- Alsó Navigáció -->
+    <nav class="bg-white border-t p-4 flex justify-around fixed bottom-0 w-full shadow-lg">
+        <button onclick="showView('profil')">Profil</button>
+        <button onclick="showView('belepoim')">Belépőim</button>
+        <button onclick="showView('arak')">Árak</button>
+        <button onclick="showView('szaunak')">Szaunák</button>
+    </nav>
+
+    <script>
+        const supabase = supabase.createClient('[URL]', '[KEY]');
+        let isLogin = true;
+
+        // Bejelentkezett állapot ellenőrzése
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('user-name').innerText = session.user.email;
+                loadTickets();
+            }
+        });
+
+        function showView(viewId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-tab'));
+            document.getElementById('view-' + viewId).classList.add('active-tab');
+        }
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            document.getElementById('main-btn').innerText = isLogin ? "Bejelentkezés" : "Regisztráció";
+            document.getElementById('toggle-text').innerText = isLogin ? "Nincs még fiókod? Regisztráció" : "Már van fiókom? Bejelentkezés";
+            ['full_name', 'phone', 'birth_date'].forEach(id => document.getElementById(id).classList.toggle('hidden'));
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (isLogin) {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) alert(error.message);
+            } else {
+                const { error } = await supabase.auth.signUp({ 
+                    email, password, 
+                    options: { data: { 
+                        full_name: document.getElementById('full_name').value,
+                        phone: document.getElementById('phone').value,
+                        birth_date: document.getElementById('birth_date').value 
+                    }}
+                });
+                if (error) alert(error.message);
+                else alert("Regisztráció sikeres! Kérlek erősítsd meg az e-mail címedet.");
+            }
+        }
+
+        async function loadTickets() {
+            const { data } = await supabase.from('tickets').select('*');
+            const list = document.getElementById('tickets-list');
+            list.innerHTML = data.map(t => `<div class="p-4 bg-white mb-2 rounded shadow">${t.type} - Érvényes: ${t.valid_until}</div>`).join('');
+        }
+
+        async function logout() { await supabase.auth.signOut(); location.reload(); }
+
+
+        // Admin jogosultság ellenőrzése és betöltése
+async function checkAdmin() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (profile && profile.role === 'admin') {
+        document.getElementById('admin-controls').classList.remove('hidden');
+        document.getElementById('admin-denied').classList.add('hidden');
+        loadSettings();
+    }
+}
+
+// Beállítások betöltése az adatbázisból
+async function loadSettings() {
+    const { data } = await supabase.from('settings').select('*');
+    data.forEach(item => {
+        if(item.key === 'szauna_ar') document.getElementById('admin-szauna-price').value = item.value;
+        if(item.key === 'nyitvatartas') document.getElementById('admin-nyitvatartas').value = item.value;
+    });
+}
+
+// Beállítások mentése
+async function saveSettings() {
+    const szaunaAr = document.getElementById('admin-szauna-price').value;
+    const nyitvatartas = document.getElementById('admin-nyitvatartas').value;
+
+    await supabase.from('settings').upsert([
+        { key: 'szauna_ar', value: szaunaAr },
+        { key: 'nyitvatartas', value: nyitvatartas }
+    ]);
+    alert("Mentve!");
+}
+
+// Ezt hívd meg a bejelentkezéskor is:
+supabase.auth.onAuthStateChange((event, session) => {
+    if (session) {
+        // ... meglévő kód ...
+        checkAdmin(); // Itt ellenőrizzük az admin jogot
+    }
+});
+
+
+    </script>
+</body>
+</html>
